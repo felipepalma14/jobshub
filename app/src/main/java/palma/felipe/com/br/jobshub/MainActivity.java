@@ -2,59 +2,99 @@ package palma.felipe.com.br.jobshub;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DividerItemDecoration;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.View;
+import android.widget.ProgressBar;
+import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import okhttp3.OkHttpClient;
+import palma.felipe.com.br.jobshub.adapter.LineAdapter;
 import palma.felipe.com.br.jobshub.model.Issue;
-import palma.felipe.com.br.jobshub.repository.IGithubAPIService;
-import palma.felipe.com.br.jobshub.util.OkHttpUtils;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
+import palma.felipe.com.br.jobshub.presenter.IssueContract;
+import palma.felipe.com.br.jobshub.presenter.IssuePresenter;
+import palma.felipe.com.br.jobshub.repository.GitHubServiceImpl;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements IssueContract.View {
+
+    //https://developer.github.com/v3/issues/#get-a-single-issue
     private final String TAG = this.getClass().getSimpleName();
+
+    private IssueContract.UserActionListener mUserActionListener;
+
+    RecyclerView mRecyclerView;
+    private ProgressBar mProgressBar;
+    private LineAdapter mAdapter;
+
+    LineAdapter.ItemListener mItemListener = new LineAdapter.ItemListener() {
+
+        @Override
+        public void onIssueClick(Issue clickedIssue) {
+            mUserActionListener.loadIssueDetails(clickedIssue);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // set up retrofit builder object
+        mProgressBar = (ProgressBar)findViewById(R.id.progresbar);
+        mRecyclerView = (RecyclerView)findViewById(R.id.list);
+        mUserActionListener = new IssuePresenter(new GitHubServiceImpl(),this);
+        setupRecycler();
 
-        OkHttpClient client = OkHttpUtils.createHttpClient();
-        Retrofit.Builder builder = new Retrofit.Builder()
+    }
 
-                .baseUrl(Config.BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client);
-        //create retrofit object
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mUserActionListener.loadIssues();
+    }
 
-        Retrofit retrofit = builder.build();
-        //instance of our github user
+    @Override
+    public void showIssues(List<Issue> issues) {
+        Log.d(TAG,issues.toString());
+        mAdapter.replaceData(issues);
 
-        IGithubAPIService githubAPIService = retrofit.create(IGithubAPIService.class);
+    }
 
-        Call<List<Issue>> call = githubAPIService.getAllIssues();
+    @Override
+    public void showIssueDetails(Issue issue) {
+        Toast.makeText(this,"Clicou: " + issue.getNumber(), Toast.LENGTH_LONG).show();
+    }
 
-        call.enqueue(new Callback<List<Issue>>() {
-            @Override
-            public void onResponse(Call<List<Issue>> call, Response<List<Issue>> response) {
-                Log.d("TESTE",response.code()+"");
-                List<Issue> list = response.body(); // return the response to a list object
-                Log.d("TESTE",list.get(3).toString());
+    @Override
+    public void onError(String error) {
 
-            }
+    }
 
-            @Override
-            public void onFailure(Call<List<Issue>> call, Throwable t) {
-                Log.d("TESTE",t.getMessage());
-            }
-        });
+    @Override
+    public void showProgressBar() {
+        mProgressBar.setVisibility(View.VISIBLE);
 
+    }
+
+    @Override
+    public void hideProgressBar() {
+        mProgressBar.setVisibility(View.GONE);
+    }
+
+    private void setupRecycler() {
+        // Configurando o gerenciador de layout para ser uma lista.
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        mRecyclerView.setLayoutManager(layoutManager);
+        // Adiciona o adapter que irá anexar os objetos à lista.
+        // Está sendo criado com lista vazia, pois será preenchida posteriormente.
+        mAdapter = new LineAdapter(new ArrayList<Issue>(0),mItemListener);
+        mRecyclerView.setAdapter(mAdapter);
+
+        // Configurando um dividr entre linhas, para uma melhor visualização.
+        mRecyclerView.addItemDecoration(
+                new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
     }
 }
