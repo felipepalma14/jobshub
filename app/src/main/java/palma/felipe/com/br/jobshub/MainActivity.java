@@ -1,5 +1,6 @@
 package palma.felipe.com.br.jobshub;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DividerItemDecoration;
@@ -65,7 +66,13 @@ public class MainActivity extends AppCompatActivity implements IssueContract.Vie
 
     @Override
     public void showIssueDetails(Issue issue) {
+        Bundle mBundle = new Bundle();
+        mBundle.putSerializable("ISSUE", issue);
         Toast.makeText(this,"Clicou: " + issue.getNumber(), Toast.LENGTH_LONG).show();
+        Intent mIntent = new Intent(this, DetailJobsActivity.class);
+        mIntent.putExtras(mBundle);
+
+        startActivity(mIntent);
     }
 
     @Override

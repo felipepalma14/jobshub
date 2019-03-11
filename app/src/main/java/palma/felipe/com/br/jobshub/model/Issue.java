@@ -4,9 +4,10 @@ package palma.felipe.com.br.jobshub.model;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class Issue {
+public class Issue implements Serializable {
     @SerializedName("url")
     @Expose
     private String url;
